@@ -1,7 +1,45 @@
-#define FUSE_USE_VERSION 29
+#define FUSE_USE_VERSION 26
+
+struct afs_pdata {
+	char *hdddir;
+	char *ssddir;
+};
 
 #include <fuse.h>
 
+void* afs_init(struct fuse_conn_info *conn){
+	return ((struct afs_pdata*)fuse_get_context()->private_data);
+}
+
+void afs_destroy(void * pdata){
+	// free(pdata);
+}
+
+int afs_create(const char * path, mode_t mode, struct fuse_file_info * fi){
+	int res;
+	res = open(path, fi->flags, mode);
+	if (res < 0){
+		//error;
+		return res;
+	}
+	fi->fh = res;
+	return 0;
+}
+
+int afs_open(const char * path, struct fuse_file_info * fi){
+	int res;
+	res = open(path, fi->flags);
+	if(res < 0){
+		//error;
+		return res;
+	}
+	fi->fh = res;
+	return 0;
+}
+
+int afs_read(const char * path, char * buff, size_t size, off_t offset, struct fuse_file_info * fi){
+	
+}
 
 static struct fuse_operations operations = {
 	.init = afs_init,
@@ -12,7 +50,6 @@ static struct fuse_operations operations = {
 
 	.create = afs_create,
 	.open = afs_open,
-	.create = afs_create,
 	.read = afs_read,
 	.wirte = afs_wirte,
 
@@ -32,8 +69,19 @@ static struct fuse_operations operations = {
 
 int main(int argc, char *argv[]){
 	int ret_state;
+	struct afs_pdata *afs_data;
 
-	ret_state = fuse_main(argc, argv, operations, NULL);
+	afs_data = malloc(sizeof(struct afs_pdata));
+	if(afs_data == NULL){
+		// error
+		exit(-1);
+	}
+
+	afs_data->hdddir = realpath(argv[argc-3], NULL);
+	afs_data->ssddir = realpath(argv[argc-2], NULL);
+	argv[argc-3] = argv[argc-1];
+
+	ret_state = fuse_main(argc-2, argv, operations, afs_data);
 	// argc : argc
 	// argv : argv
 	// operations : struct fuse_operation
