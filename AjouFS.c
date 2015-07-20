@@ -7,6 +7,82 @@ struct afs_pdata {
 
 #include <fuse.h>
 
+static int afs_getattr(const char *path, struct stat * stbuf)
+{
+	int res;
+	res = lstat(path, stbuf);
+
+	if(res = -1)
+	{
+		return errno;
+	}
+	return 0;
+}
+static int afs_fgetattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
+{        
+	int res;        
+	(void) path;        
+	res = fstat(fi->fh, stbuf);
+        
+	if (res == -1)//err
+	{
+		return -errno;
+	}
+	return 0;
+}
+static int afs_access(const char *path, int mask)
+{        
+	int res;        
+	res = access(path, mask);
+        
+	if (res == -1)//err
+	{
+		return -errno;
+	}
+	return 0;
+}
+static int afs_readlink(const char *path, char *buf, size_t size)
+{        
+	int res;        
+	res = readlink(path, buf, size - 1);
+
+	if (res == -1)//err
+	{
+		return -errno;
+	}
+	buf[res] = '\0';        
+	return 0;
+}
+static int afs_mknod(const char *path, mode_t mode, dev_t rdev)
+{        
+	int res;
+
+	if (S_ISFIFO(mode))
+	{
+		res = mkfifo(path, mode);
+	}
+	else
+	{
+		res = mknod(path, mode, rdev);
+	}
+
+	if (res == -1)//err
+	{
+		return -errno;
+	}
+	return 0;
+}
+static int afs_mkdir(const char *path, mode_t mode)
+{        
+	int res;        
+	res = mkdir(path, mode);
+
+	if (res == -1)//err
+	{
+		return -errno;
+	}
+	return 0;
+}
 void* afs_init(struct fuse_conn_info *conn){
 	return ((struct afs_pdata*)fuse_get_context()->private_data);
 }
